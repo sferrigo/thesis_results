@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-script_incendio_plotly_v3.py
+incendio.py
 
 Versão interativa usando Plotly do script de detecção de fogo
-(baseado em Dempster–Shafer + checagem de umidade), com legendas
+(baseado em Dempster–Shafer), com legendas
 para as linhas verticais pontilhadas:
 - Temperatura em vermelho
-- Linha pontilhada cinza = Detecção refinada
-- Linha pontilhada preta = Alarme benchmark (14:26:50)
-- Linha pontilhada azul = Início real do fogo (14:22:10)
+- Linha  cinza = Detecção
+- Linha  preta = Alarme benchmark 
+- Linha  azul = Início real do fogo
 """
 
 import pandas as pd
@@ -19,7 +18,7 @@ import plotly.graph_objects as go
 
 # === 1. Leitura e pré-processamento ===
 df = pd.read_csv(
-    './teste_incendio_bg.csv',
+    './teste_incendio_bg.csv',#CSV exportado do TagoIo
     usecols=['variable', 'value', 'time'],
     parse_dates=['time']
 )
@@ -36,9 +35,9 @@ temps = df_wide['temperature'].to_numpy()
 hums  = df_wide['humidity'].to_numpy()
 
 # === 2. Parâmetros Dempster–Shafer ===
-WT           = 35
-tr_threshold = 1.01
-m_threshold  = 0.6
+WT           = 35 #Quantidade mínma de amostras
+tr_threshold = 1.01 #Razão
+m_threshold  = 0.6 #Nível de confiança (crença/mass)
 
 pts_temp = np.array([43,44,45,46,47,48,49,50,51,52,53,54], dtype=float)
 pts_hum  = np.array([23,22,20,18,16,15,14,14,14,14,14,14], dtype=float)
@@ -91,12 +90,12 @@ for i in range(WT, len(times)):
         detection_time = times[i]
         break
 
-# === 4. Horários fixos ===
+# === 4. Horário de analise ===
 base_date       = df_wide.index[0].date().isoformat()
 benchmark_time  = pd.to_datetime(f"{base_date} 14:26:50")
 start_fire_time = pd.to_datetime(f"{base_date} 14:22:10")
 
-# determinar limites de temperatura para vertical lines
+# determinar limites de temperatura para linhas
 y_min, y_max = temps.min(), temps.max()
 
 # === 5. Plotly ===
@@ -110,7 +109,7 @@ fig.add_trace(
                line=dict(color="red")),
     secondary_y=False
 )
-# Umidade
+# Humidade
 fig.add_trace(
     go.Scatter(x=times, y=hums, name="Umidade (%)"),
     secondary_y=True
@@ -151,7 +150,7 @@ fig.add_trace(
     secondary_y=False
 )
 
-# Eixos e layout final
+# Eixos e layout
 fig.update_yaxes(title_text="Temperatura (°C)", secondary_y=False)
 fig.update_yaxes(title_text="Umidade (%)", secondary_y=True)
 fig.update_layout(
